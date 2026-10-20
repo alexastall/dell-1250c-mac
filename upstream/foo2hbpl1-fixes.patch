@@ -1,0 +1,47 @@
+--- a/foo2hbpl1.c
++++ b/foo2hbpl1.c
+@@ -45,7 +45,7 @@
+ #include <string.h>
+ #include <unistd.h>
+ #include <stdarg.h>
+-#ifdef linux
++#if defined(linux) || defined(__APPLE__)
+     #include <sys/utsname.h>
+ #endif
+ 
+@@ -283,7 +283,7 @@
+     strftime(datestr, sizeof datestr, "%m/%d/%Y", tmp);
+     strftime(timestr, sizeof timestr, "%H:%M:%S", tmp);
+ 
+-    #ifdef linux
++    #if defined(linux) || defined(__APPLE__)
+     {
+ 	struct utsname u;
+ 
+@@ -401,7 +401,7 @@
+     int paper = 510, hsel = 0, off = 0, bit = 0, stat = 0;
+     int margin = width-96;
+ 
+-    for (i = 0; i < sizeof papers / sizeof *papers; i++)
++    for (i = 0; i < sizeof papers / sizeof *papers; i += 3)
+ 	if (abs(width-papers[i+1]) < 36 && abs(height-papers[i+2]) < 36)
+ 	    paper = papers[i];
+     if (!MediaCode)
+@@ -454,7 +454,7 @@
+ 	for (bdir = brun = dir = 0; dir < 5; dir++)
+ 	{
+ 	    try = dirs[rotor[dir]];
+-	    for (run = 0; run < 17057; run++, try++)
++	    for (run = 0; run < 17057 && run < width*height - off; run++, try++)
+ 	    {
+ 		if (color)
+ 		{
+@@ -625,7 +625,7 @@
+ 			if (k < sp[i]) k = sp[i];
+ 		    *dp = ~k;
+ 		    for (i = 0; i < 3; i++)
+-			dp[i+1] = k ? (k - sp[i]) * 255 / k : 255;
++			dp[i+1] = k ? (k - sp[i]) * 255 / k : 0;
+ 		    break;
+ 		case 4:
+ 		    for (i=0; i < 4; i++)
