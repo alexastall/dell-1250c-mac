@@ -1,0 +1,4 @@
+#!/bin/sh
+# Let cupsd pick up the new PPD straight away.
+launchctl kickstart -k system/org.cups.cupsd >/dev/null 2>&1 || true
+exit 0

@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build universal installer
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          case "$VERSION" in [0-9]*) ;; *) VERSION=0.0.0-dev ;; esac
+          VERSION="$VERSION" ./build.sh
+          lipo -info build/root/Library/Printers/HBPL1/Filter/rastertohbpl1
+          cupstestppd -W filters "ppd/Dell 1250c.ppd"
+
+      - name: Smoke test (PDF -> raster -> HBPL)
+        run: |
+          cupsfilter -p "ppd/Dell 1250c.ppd" -m application/vnd.cups-raster \
+            test/testpage.pdf > page.ras 2>/dev/null
+          build/root/Library/Printers/HBPL1/Filter/rastertohbpl1 1 ci test 1 "" page.ras > page.hbpl
+          head -c 20 page.hbpl | grep -q '@PJL'
+          ls -la page.hbpl
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer
+          path: build/*.pkg
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" build/*.pkg \
+            --title "$GITHUB_REF_NAME" --notes-file .github/release-notes.md
